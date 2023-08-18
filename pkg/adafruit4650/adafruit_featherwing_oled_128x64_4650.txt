@@ -1,0 +1,44 @@
+// https://github.com/adafruit/Adafruit_CircuitPython_DisplayIO_SH1107/blob/dad14cdeaaa38c8ca2b168c455cdc15f91d1cb0b/adafruit_displayio_sh1107.py#L113
+0xae  // display off, sleep mode
+0xdc 0x00  // set display start line 0
+0x81 0x4f  // contrast setting = 0x4f
+0x20  // vertical (column) addressing mode (POR=0x20)
+0xa0  // segment remap = 1 (POR=0, down rotation)
+0xc0  // common output scan direction = 0 (0 to n-1 (POR=0))
+0xa8 0x7f  // multiplex ratio = 128 (POR=0x7F)
+0xd3 0x60  // set display offset mode = 0x60
+// 0xd5 0x51  // divide ratio/oscillator: divide by 2, fOsc (POR)
+0xd9 0x22  // pre-charge/dis-charge period mode: 2 DCLKs/2 DCLKs (POR)
+0xdb 0x35  // VCOM deselect level = 0.770 (POR)
+// 0xb0  // set page address = 0 (POR)
+0xa4  // entire display off, retain RAM, normal status (POR)
+0xa6  // normal (not reversed) display
+0xaf  // DISPLAY_ON
+
+
+    _INIT_SEQUENCE = (
+        b"\xae\x00"  # display off, sleep mode
+        b"\xdc\x01\x00"  # set display start line 0
+        b"\x81\x01\x4f"  # contrast setting = 0x4f
+        b"\x20\x00"  # vertical (column) addressing mode (POR=0x20)
+        b"\xa0\x00"  # segment remap = 1 (POR=0, down rotation)
+        b"\xc0\x00"  # common output scan direction = 0 (0 to n-1 (POR=0))
+        b"\xa8\x01\x7f"  # multiplex ratio = 128 (POR=0x7F)
+        b"\xd3\x01\x60"  # set display offset mode = 0x60
+        # b"\xd5\x01\x51"  # divide ratio/oscillator: divide by 2, fOsc (POR)
+        b"\xd9\x01\x22"  # pre-charge/dis-charge period mode: 2 DCLKs/2 DCLKs (POR)
+        b"\xdb\x01\x35"  # VCOM deselect level = 0.770 (POR)
+        # b"\xb0\x00"  # set page address = 0 (POR)
+        b"\xa4\x00"  # entire display off, retain RAM, normal status (POR)
+        b"\xa6\x00"  # normal (not reversed) display
+        b"\xaf\x00"  # DISPLAY_ON
+    )
+    _PIXELS_IN_ROW = False
+    _ROTATION_OFFSET = 90
+            rotation = (rotation + _ROTATION_OFFSET) % 360
+            if rotation in (0, 180):
+                multiplex = kwargs["width"] - 1
+            else:
+                multiplex = kwargs["height"] - 1
+            init_sequence[16] = multiplex
+            init_sequence[19] = display_offset
