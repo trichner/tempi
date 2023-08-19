@@ -5,6 +5,8 @@ import (
 	"image/color"
 	"machine"
 	"time"
+	"tinygo.org/x/tinyfont"
+	"tinygo.org/x/tinyfont/freemono"
 )
 
 const DISPLAY_ADDR = 0x3C
@@ -12,6 +14,10 @@ const DISPLAY_ADDR = 0x3C
 var constWhite = color.RGBA{255, 255, 255, 0}
 
 func main() {
+	machine.InitSerial()
+
+	time.Sleep(2 * time.Second)
+	Log("ready to go")
 
 	bus := machine.I2C1
 	err := bus.Configure(machine.I2CConfig{})
@@ -21,32 +27,39 @@ func main() {
 
 	disp := adafruit4650.NewI2C(bus)
 
-	err = disp.Configure(adafruit4650.Config{
-		Width:    128,
-		Height:   64,
-		VccState: adafruit4650.EXTERNALVCC,
-	})
+	Log("configuring")
+	err = disp.Configure()
 	if err != nil {
 		panic(err)
 	}
 
 	time.Sleep(100 * time.Millisecond)
-	err = disp.ClearDisplay()
+	//err = disp.ClearDisplay()
+	Log("displaying")
+	err = disp.Display()
 	if err != nil {
 		panic(err)
 	}
 	time.Sleep(100 * time.Millisecond)
+
+	Log("writing line")
+	tinyfont.WriteLine(&disp, &freemono.Regular9pt7b, 0, 32, "Hello World!", constWhite)
 
 	//for i := int16(0); i < 128; i++ {
 	//	disp.SetPixel(i, 32, color.RGBA{R: 1})
 	//}
 	//for i := int16(0); i < 64; i++ {
-	//	disp.SetPixel(64, i, color.RGBA{R: 1})
+	//	disp.SetPixel(i, 32, color.RGBA{R: 1})
+	//}
+	//for i := int16(0); i < 64; i++ {
+	//	disp.SetPixel(32, i, color.RGBA{R: 1})
 	//}
 	err = disp.Display()
 	if err != nil {
 		panic(err)
 	}
+
+	Log("ready for blink")
 
 	led := machine.LED
 	led.Configure(machine.PinConfig{Mode: machine.PinOutput})
@@ -56,5 +69,12 @@ func main() {
 
 		led.High()
 		time.Sleep(time.Millisecond * 100)
+	}
+}
+
+func Log(s string) {
+	_, err := machine.Serial.Write([]byte(s + "\n\r"))
+	if err != nil {
+		panic(err)
 	}
 }

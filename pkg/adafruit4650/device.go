@@ -4,8 +4,6 @@
 package adafruit4650 // import "tinygo.org/x/drivers/sh1106"
 
 import (
-	"errors"
-	"fmt"
 	"image/color"
 	"machine"
 	"time"
@@ -63,74 +61,54 @@ func NewI2C(bus drivers.I2C) Device {
 }
 
 // Configure initializes the display with default configuration
-func (d *Device) Configure(cfg Config) error {
-	if cfg.Width != 0 {
-		d.width = cfg.Width
-	} else {
-		d.width = 128
-	}
-	if cfg.Height != 0 {
-		d.height = cfg.Height
-	} else {
-		d.height = 64
-	}
-	if cfg.VccState != 0 {
-		d.vccState = cfg.VccState
-	} else {
-		d.vccState = SWITCHCAPVCC
-	}
+func (d *Device) Configure() error {
+	d.width = 128
+	d.height = 64
 
 	bufferSize := d.width * d.height / 8
 	d.buffer = make([]byte, bufferSize)
 
-	time.Sleep(100 * time.Nanosecond)
+	time.Sleep(100 * time.Millisecond)
 
 	// https://github.com/adafruit/Adafruit_CircuitPython_DisplayIO_SH1107/blob/dad14cdeaaa38c8ca2b168c455cdc15f91d1cb0b/adafruit_displayio_sh1107.py#L113
 	initSequence := []byte{
 		0xae, // display off, sleep mode
-		0xdc,
-		0x00, // set display start line 0 (POR=0)
-		0x81,
-		0x4f, // contrast setting = 0x4f
-		0x21, // vertical (column) addressing mode (POR=0x20)
-		0xa0, // segment remap = 1 (POR=0, down rotation)
-		0xc0, // common output scan direction = 0 (0 to n-1 (POR=0))
-		0xa8,
-		0x3f, // multiplex ratio = 128 (POR=0x3F) = height - 1
-		0xd3,
-		0x60, // set display offset mode = 0x60
-		//0xd5 0x51  // divide ratio/oscillator: divide by 2, fOsc (POR)
-		0xd9,
-		0x22, // pre-charge/dis-charge period mode: 2 DCLKs/2 DCLKs (POR)
-		0xdb,
-		0x35, // VCOM deselect level = 0.770 (POR)
-		//0xb0  // set page address = 0 (POR)
+		//0xd5, 0x41, // set display clock divider (from original datasheet)
+		//0xd5, 0x51, // set display clock divider
+		0xd5, 0x80, // set display clock divider
+		0xd9, 0x22, // pre-charge/dis-charge period mode: 2 DCLKs/2 DCLKs (POR)
+		0x20,       // memory mode
+		0x81, 0x4f, // contrast setting = 0x4f
+		0xad, 0x8a, // set dc/dc pump
+		0xa0,       // segment remap, flip-x
+		0xc0,       // common output scan direction
+		0xdc, 0x00, // set display start line 0 (POR=0)
+		0xa8, 0x3f, // multiplex ratio, height - 1 = 0x3f
+		0xd3, 0x60, // set display offset mode = 0x60
+		0xdb, 0x35, // VCOM deselect level = 0.770 (POR)
 		0xa4, // entire display off, retain RAM, normal status (POR)
 		0xa6, // normal (not reversed) display
+		0xaf, // DISPLAY_ON
 	}
 
-	for _, cmd := range initSequence {
-		err := d.writeCommand(cmd)
-		if err != nil {
-			return err
-		}
+	err := d.bus.WriteCommands(initSequence)
+	if err != nil {
+		return err
 	}
 
 	time.Sleep(100 * time.Millisecond)
-	return d.writeCommand(
-		0xaf, // DISPLAY_ON
-	)
-}
-
-// ClearBuffer clears the image buffer
-func (d *Device) ClearBuffer() {
-	bzero(d.buffer)
+	return nil
 }
 
 // ClearDisplay clears the image buffer and clear the display
 func (d *Device) ClearDisplay() error {
-	d.ClearBuffer()
+	d.clearBuffer()
 	return d.Display()
+}
+
+// clearBuffer clears the image buffer
+func (d *Device) clearBuffer() {
+	bzero(d.buffer)
 }
 
 // SetPixel enables or disables a pixel in the buffer
@@ -138,55 +116,48 @@ func (d *Device) ClearDisplay() error {
 // with turn a pixel on the screen
 func (d *Device) SetPixel(x int16, y int16, c color.RGBA) {
 	if x < 0 || x >= d.width || y < 0 || y >= d.height {
-		panic("out of range!")
 		return
 	}
 
-	stride := d.width / 8
-	byteIndex := x/8 + y*stride
-	//   |   ----> x
-	// y v
-	//      p0           p1 .... p15
-	//   0  a0 a1 .. a7  a0 a1 ..
-	//   1  b0 b1 .. b7  b0 b1 ..
-	//   2  c0 c1 .. c7
-	//  ..
-	//  64
+	//flip y
+	y = d.height - y - 1
+
+	page := x / 8
+	bytesPerPage := d.height
+	byteIndex := y + bytesPerPage*page
+	bit := x % 8
+	//    *-----> y
+	//    |
+	//   x|     col0  col1  ... col63
+	//    v  p0  a0    b0         ..
+	//           a1    b1         ..
+	//           ..    ..         ..
+	//           a7    b7         ..
+	//       p1  a0    b0
+	//           a1    b1
 	//
 	if (c.R | c.G | c.B) != 0 {
-		d.buffer[byteIndex] |= 1 << uint8(x%8)
+		d.buffer[byteIndex] |= 1 << uint8(bit)
 	} else {
-		d.buffer[byteIndex] &^= 1 << uint8(x%8)
+		d.buffer[byteIndex] &^= 1 << uint8(bit)
 	}
 }
 
 // Display sends the whole buffer to the screen
 func (d *Device) Display() error {
 
-	fmt.Printf("buffer len: %d x %d = %d\n", d.width, d.height, len(d.buffer))
-	err := d.setPageAddress(uint8(0))
-	if err != nil {
-		return err
-	}
-	err = d.setColumnAddress(0)
-	if err != nil {
-		return err
-	}
+	bytesPerPage := d.height
 
-	//   |   ----> x
-	// y v
-	//      p0           p1 .... p15
-	//   0  a0 a1 .. a7  a0 a1 ..
-	//   1  b0 b1 .. b7  b0 b1 ..
-	//   2  c0 c1 .. c7
-	//  ..
-	//  64
-	//
-	for column := int16(0); column < d.height; column++ {
+	pages := (d.width + 7) / 8
+	for page := int16(0); page < pages; page++ {
 
-		stride := d.width / 8
-		offset := column * stride
-		err = d.bus.WriteData(d.buffer[offset : offset+stride])
+		err := d.setRAMPosition(uint8(page), 0)
+		if err != nil {
+			return err
+		}
+
+		offset := page * bytesPerPage
+		err = d.bus.WriteRAM(d.buffer[offset : offset+bytesPerPage])
 		if err != nil {
 			return err
 		}
@@ -195,52 +166,33 @@ func (d *Device) Display() error {
 	return nil
 }
 
-func (d *Device) setPageAddress(p uint8) error {
-	if p > 15 {
+func (d *Device) setRAMPosition(page uint8, column uint8) error {
+	if page > 15 {
 		panic("page out of bounds")
 	}
-	return d.writeCommand(0xB0 | (p & 0x07))
-}
-
-func (d *Device) setColumnAddress(column uint8) error {
-	lo := column & 0b1111
-	hi := (column >> 4) & 0b111
-	err := d.writeCommand(SETLOWCOLUMN | lo)
-	if err != nil {
-		return err
+	if column > 127 {
+		panic("column out of bounds")
 	}
-	return d.writeCommand(SETHIGHCOLUMN | hi)
+	setPage := 0xB0 | (page & 0xF)
+
+	lo := column & 0xF
+	setLowColumn := SETLOWCOLUMN | lo
+
+	hi := (column >> 4) & 0x7
+	setHighColumn := SETHIGHCOLUMN | hi
+
+	cmds := []byte{
+		setPage,
+		setLowColumn,
+		setHighColumn,
+	}
+
+	return d.bus.WriteCommands(cmds)
 }
 
 // Size returns the current size of the display.
 func (d *Device) Size() (w, h int16) {
 	return d.width, d.height
-}
-
-// SetBuffer changes the whole buffer at once
-func (d *Device) SetBuffer(buffer []byte) error {
-	if len(buffer) != len(d.buffer) {
-		return errors.New("wrong size buffer")
-	}
-	copy(d.buffer, buffer)
-	return nil
-}
-
-func (d *Device) SetScroll(line int16) {
-	d.writeCommand(SETSTARTLINE + uint8(line&0b111111))
-}
-
-// writeCommand sends a command to the display
-func (d *Device) writeCommand(command uint8) error {
-	return d.bus.WriteCommand(command)
-}
-
-func (d *Device) writeDoubleByteCommand(command, arg uint8) error {
-	err := d.bus.WriteCommand(command)
-	if err != nil {
-		return err
-	}
-	return d.bus.WriteCommand(arg)
 }
 
 func bzero(buf []byte) {

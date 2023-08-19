@@ -12,8 +12,9 @@ import (
 )
 
 type mockBus struct {
-	img  draw.Image
-	line int
+	img          draw.Image
+	line         int
+	bytesWritten int
 }
 
 func newMock() *mockBus {
@@ -22,22 +23,24 @@ func newMock() *mockBus {
 	return &mockBus{img: m}
 }
 
-func (m *mockBus) WriteCommand(command byte) error {
+func (m *mockBus) WriteCommands(commands []byte) error {
 	return nil
 }
 
-func (m *mockBus) WriteData(data []byte) error {
+func (m *mockBus) WriteRAM(data []byte) error {
 
-	//   |   ----> x
-	// y v
-	//      p0           p1 .... p15
-	//   0  a0 a1 .. a7  a0 a1 ..
-	//   1  b0 b1 .. b7  b0 b1 ..
-	//   2  c0 c1 .. c7
-	//  ..
-	//  64
+	m.bytesWritten += len(data)
+	return nil
+
+	//    *--> x
+	//   y|    col0  col1  ... col127
+	//    v p0  a0    b0         ..
+	//          a1    b1         ..
+	//          ..    ..         ..
+	//          a7    b7         ..
+	//      p1  a0    b0
+	//          a1    b1
 	//
-	//fmt.Println("received %d buffer", len(data))
 	for x := 0; x < 128; x++ {
 		byteOffset := x / 8
 		b := data[byteOffset]
@@ -75,11 +78,8 @@ func TestDevice_Display(t *testing.T) {
 		bus: bus,
 	}
 
-	dev.Configure(Config{
-		Width:    128,
-		Height:   64,
-		VccState: EXTERNALVCC,
-	})
+	dev.Configure()
+
 	for i := int16(0); i < 128; i++ {
 		dev.SetPixel(i, 32, color.RGBA{R: 1})
 	}
@@ -87,5 +87,6 @@ func TestDevice_Display(t *testing.T) {
 		dev.SetPixel(64, i, color.RGBA{R: 1})
 	}
 	dev.Display()
+	fmt.Println(bus.bytesWritten)
 	bus.writeImage()
 }
