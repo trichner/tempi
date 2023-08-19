@@ -55,7 +55,7 @@ func (d *Device) Configure() error {
 	bufferSize := d.width * d.height / 8
 	d.buffer = make([]byte, bufferSize)
 
-	// This sequence is an amalgamation of the datasheet, Arduink, CircuitPython and other drivers
+	// This sequence is an amalgamation of the datasheet, official Arduino driver, CircuitPython driver and other drivers
 	initSequence := []byte{
 		0xae, // display off, sleep mode
 		//0xd5, 0x41, // set display clock divider (from original datasheet)
