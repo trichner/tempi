@@ -25,7 +25,7 @@ func main() {
 		panic(err)
 	}
 
-	disp := adafruit4650.NewI2C(bus)
+	disp := adafruit4650.New(bus, 0)
 
 	Log("configuring")
 	err = disp.Configure()
@@ -45,15 +45,6 @@ func main() {
 	Log("writing line")
 	tinyfont.WriteLine(&disp, &freemono.Regular9pt7b, 0, 32, "Hello World!", constWhite)
 
-	//for i := int16(0); i < 128; i++ {
-	//	disp.SetPixel(i, 32, color.RGBA{R: 1})
-	//}
-	//for i := int16(0); i < 64; i++ {
-	//	disp.SetPixel(i, 32, color.RGBA{R: 1})
-	//}
-	//for i := int16(0); i < 64; i++ {
-	//	disp.SetPixel(32, i, color.RGBA{R: 1})
-	//}
 	err = disp.Display()
 	if err != nil {
 		panic(err)
