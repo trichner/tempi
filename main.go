@@ -1,10 +1,14 @@
 package main
 
 import (
+	"fmt"
 	"github.com/trichner/tempi/pkg/adafruit4650"
+	"github.com/trichner/tempi/pkg/logger"
 	"github.com/trichner/tempi/pkg/pcf8523"
+	"github.com/trichner/tempi/pkg/sht4x"
 	"image/color"
 	"machine"
+	"strconv"
 	"time"
 	"tinygo.org/x/tinyfont"
 	"tinygo.org/x/tinyfont/freemono"
@@ -35,7 +39,7 @@ func main() {
 	}
 
 	//Setting up current time:
-	//now := time.Date(2023, 8, 19, 23, 28, 0, 0, time.UTC)
+	//now := time.Date(2023, 8, 24, 20, 49, 0, 0, time.UTC)
 	//err = rtc.SetTime(now)
 	//if err != nil {
 	//	panic(err)
@@ -46,7 +50,9 @@ func main() {
 	//if err != nil {
 	//	panic(err)
 	//}
-	//Log(FmtSliceToHex(data))
+
+	Log("setup temp")
+	sht := sht4x.New(bus, 0)
 
 	Log("setup display")
 	disp := adafruit4650.New(bus, 0)
@@ -68,29 +74,85 @@ func main() {
 
 	Log("writing line")
 	tinyfont.WriteLine(&disp, &freemono.Regular9pt7b, 0, 32, "Hello World!", constWhite)
-
 	err = disp.Display()
 	if err != nil {
 		panic(err)
 	}
 
+	Log("setup SD card")
+	lg, err := logger.New()
+	if err != nil {
+		panic(err)
+	}
+
+	n, err := lg.IncrementBootCount()
+	if err != nil {
+		panic(err)
+	}
+	Log("bootcount: " + strconv.Itoa(n))
+
 	Log("ready for blink")
 
 	led := machine.LED
 	led.Configure(machine.PinConfig{Mode: machine.PinOutput})
+	toggle := 0
+	lastMeasurement := time.Time{}
 	for {
-		led.Low()
-		time.Sleep(time.Millisecond * 100)
-		led.High()
-		time.Sleep(time.Millisecond * 100)
+		toggle++
+		if toggle%2 == 0 {
+			led.Low()
+		} else {
+			led.High()
+		}
 
 		t, err := rtc.ReadTime()
 		if err != nil {
 			panic(err)
 		}
-		Log("rtc: " + t.Format(time.RFC3339))
-		time.Sleep(time.Second)
+
+		temp, hum, err := sht.ReadTemperatureHumidity()
+		if err != nil {
+			panic(err)
+		}
+
+		if t.Sub(lastMeasurement) >= time.Minute*5 {
+			Log("appending record")
+			lastMeasurement = t
+			err = lg.AppendRecord(&logger.Record{
+				Timestamp:                    t,
+				MilliDegreeCelsius:           temp,
+				MilliPercentRelativeHumidity: hum,
+			})
+			if err != nil {
+				panic(err)
+			}
+		}
+
+		err = updateDisplay(&disp, t, temp, hum)
+		if err != nil {
+			panic(err)
+		}
+
+		time.Sleep(50 * time.Millisecond)
 	}
+}
+
+func updateDisplay(disp *adafruit4650.Device, t time.Time, milliTemp, milliRh int32) error {
+
+	hours := (t.Hour() + 2) % 24 // UTC -> CEST
+	l := fmt.Sprintf("%02d:%02d:%02d", hours, t.Minute(), t.Second())
+
+	deg := float32(milliTemp) / 1000.0
+	lineTemp := fmt.Sprintf("%2.1f°C", deg)
+
+	rhum := float32(milliRh) / 1000.0
+	lineRhum := fmt.Sprintf("%2.1f%%RH", rhum)
+
+	disp.ClearBuffer()
+	tinyfont.WriteLine(disp, &freemono.Regular9pt7b, 0, 50, l, constWhite)
+	tinyfont.WriteLine(disp, &freemono.Regular9pt7b, 0, 10, lineTemp, constWhite)
+	tinyfont.WriteLine(disp, &freemono.Regular9pt7b, 0, 25, lineRhum, constWhite)
+	return disp.Display()
 }
 
 func Log(s string) {

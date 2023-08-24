@@ -4,7 +4,7 @@
 // Store: https://www.adafruit.com/product/4650
 //
 // Documentation: https://learn.adafruit.com/adafruit-128x64-oled-featherwing
-package adafruit4650 // import "tinygo.org/x/drivers/sh1106"
+package adafruit4650
 
 import (
 	"image/color"
@@ -26,7 +26,7 @@ const (
 	height = 64
 )
 
-// Device represents an Adafruit
+// Device represents an Adafruit 4650 device
 type Device struct {
 	bus    Bus
 	buffer []byte
@@ -88,8 +88,13 @@ func (d *Device) Configure() error {
 
 // ClearDisplay clears the image buffer as well as the actual display
 func (d *Device) ClearDisplay() error {
-	bzero(d.buffer)
+	d.ClearBuffer()
 	return d.Display()
+}
+
+// ClearBuffer clears the buffer
+func (d *Device) ClearBuffer() {
+	bzero(d.buffer)
 }
 
 // SetPixel modifies the internal buffer. Since this display has a bit-depth of 1 bit any non-zero
