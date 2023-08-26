@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/trichner/tempi/pkg/adafruit4650"
+	"github.com/trichner/tempi/pkg/hi"
 	"github.com/trichner/tempi/pkg/logger"
 	"github.com/trichner/tempi/pkg/pcf8523"
 	"github.com/trichner/tempi/pkg/sht4x"
@@ -97,6 +98,14 @@ func main() {
 	led.Configure(machine.PinConfig{Mode: machine.PinOutput})
 	toggle := 0
 	lastMeasurement := time.Time{}
+
+	buttons := []machine.Pin{machine.GPIO7, machine.GPIO8, machine.GPIO9}
+	for _, b := range buttons {
+		b.Configure(machine.PinConfig{Mode: machine.PinInputPullup})
+	}
+
+	buttonPressed := time.Time{}
+
 	for {
 		toggle++
 		if toggle%2 == 0 {
@@ -105,7 +114,7 @@ func main() {
 			led.High()
 		}
 
-		t, err := rtc.ReadTime()
+		now, err := rtc.ReadTime()
 		if err != nil {
 			panic(err)
 		}
@@ -115,11 +124,11 @@ func main() {
 			panic(err)
 		}
 
-		if t.Sub(lastMeasurement) >= time.Minute*5 {
+		if now.Sub(lastMeasurement) >= time.Minute*5 {
 			Log("appending record")
-			lastMeasurement = t
+			lastMeasurement = now
 			err = lg.AppendRecord(&logger.Record{
-				Timestamp:                    t,
+				Timestamp:                    now,
 				MilliDegreeCelsius:           temp,
 				MilliPercentRelativeHumidity: hum,
 			})
@@ -128,9 +137,22 @@ func main() {
 			}
 		}
 
-		err = updateDisplay(&disp, t, temp, hum)
-		if err != nil {
-			panic(err)
+		for _, b := range buttons {
+			if !b.Get() {
+				buttonPressed = now
+			}
+		}
+
+		if now.Sub(buttonPressed) <= time.Second*40 {
+			err = updateDisplay(&disp, now, temp, hum)
+			if err != nil {
+				panic(err)
+			}
+		} else {
+			err = disp.ClearDisplay()
+			if err != nil {
+				panic(err)
+			}
 		}
 
 		time.Sleep(50 * time.Millisecond)
@@ -145,8 +167,22 @@ func updateDisplay(disp *adafruit4650.Device, t time.Time, milliTemp, milliRh in
 	deg := float32(milliTemp) / 1000.0
 	lineTemp := fmt.Sprintf("%2.1f°C", deg)
 
+	eff := hi.HeatIndexToEffect(hi.Calculate(milliTemp, milliRh))
+
+	emoji := ""
+	switch eff {
+	case hi.EffectNone:
+		fallthrough
+	case hi.EffectUnknown:
+		emoji = ":)"
+	case hi.EffectCaution:
+		emoji = ":/"
+	case hi.EffectExtremeCaution:
+		emoji = ":O"
+	}
+
 	rhum := float32(milliRh) / 1000.0
-	lineRhum := fmt.Sprintf("%2.1f%%RH", rhum)
+	lineRhum := fmt.Sprintf("%2.1f%%RH  %s", rhum, emoji)
 
 	disp.ClearBuffer()
 	tinyfont.WriteLine(disp, &freemono.Regular9pt7b, 0, 50, l, constWhite)
