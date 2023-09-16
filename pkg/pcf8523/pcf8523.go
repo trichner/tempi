@@ -1,8 +1,6 @@
-// Package pcf8563 implements a driver for the PCF8563 CMOS Real-Time Clock (RTC)
+// Package pcf8523 implements a driver for the PCF8523 CMOS Real-Time Clock (RTC)
 //
-// Datasheet: https://www.nxp.com/docs/en/data-sheet/PCF8563.pdf
-//
-
+// Datasheet: https://www.nxp.com/docs/en/data-sheet/PCF8523.pdf
 package pcf8523
 
 import (
