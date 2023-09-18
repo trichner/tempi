@@ -5,7 +5,6 @@ package pcf8523
 
 import (
 	"time"
-
 	"tinygo.org/x/drivers"
 )
 
@@ -66,7 +65,7 @@ func New(i2c drivers.I2C, addr uint8) Device {
 // Reset resets the device according to the datasheet section 8.3
 // This does not wipe the time registers, but resets control registers.
 func (d *Device) Reset() (err error) {
-	return d.bus.WriteRegister(d.addr, rControl1, []byte{0x58})
+	return d.bus.Tx(uint16(d.addr), []byte{rControl1, 0x58}, nil)
 }
 
 // SetPowerManagement configures how the device makes use of the backup battery, see
@@ -77,17 +76,18 @@ func (d *Device) SetPowerManagement(b PowerManagement) error {
 
 func (d *Device) setRegister(reg uint8, value, mask uint8) error {
 	var buf [1]byte
-	err := d.bus.ReadRegister(d.addr, reg, buf[:])
+	err := d.bus.Tx(uint16(d.addr), []byte{reg}, buf[:])
 	if err != nil {
 		return err
 	}
 	buf[0] = (value & mask) | (buf[0] & (^mask))
-	return d.bus.WriteRegister(d.addr, reg, buf[:])
+	return d.bus.Tx(uint16(d.addr), []byte{reg, buf[0]}, nil)
 }
 
 // SetTime sets the time and date
 func (d *Device) SetTime(t time.Time) error {
 	buf := []byte{
+		rSeconds,
 		bin2bcd(t.Second()),
 		bin2bcd(t.Minute()),
 		bin2bcd(t.Hour()),
@@ -97,13 +97,13 @@ func (d *Device) SetTime(t time.Time) error {
 		bin2bcd(t.Year() - 2000),
 	}
 
-	return d.bus.WriteRegister(d.addr, rSeconds, buf)
+	return d.bus.Tx(uint16(d.addr), buf, nil)
 }
 
 // ReadTime returns the date and time
 func (d *Device) ReadTime() (time.Time, error) {
 	buf := make([]byte, 9)
-	err := d.bus.ReadRegister(d.addr, rSeconds, buf)
+	err := d.bus.Tx(uint16(d.addr), []byte{rSeconds}, buf)
 	if err != nil {
 		return time.Time{}, err
 	}

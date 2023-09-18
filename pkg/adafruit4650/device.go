@@ -28,24 +28,20 @@ const (
 
 // Device represents an Adafruit 4650 device
 type Device struct {
-	bus    Bus
-	buffer []byte
-	width  int16
-	height int16
+	bus     drivers.I2C
+	Address uint8
+	buffer  []byte
+	width   int16
+	height  int16
 }
 
 // New creates a new device, not configuring anything yet.
-func New(bus drivers.I2C, addr uint8) Device {
-	if addr == 0 {
-		addr = i2cAdressSh1107
-	}
+func New(bus drivers.I2C) Device {
 	return Device{
-		bus: &i2cbus{
-			dev:  bus,
-			addr: addr,
-		},
-		width:  width,
-		height: height,
+		bus:     bus,
+		Address: i2cAdressSh1107,
+		width:   width,
+		height:  height,
 	}
 }
 
@@ -75,7 +71,7 @@ func (d *Device) Configure() error {
 		0xaf, // display on
 	}
 
-	err := d.bus.WriteCommands(initSequence)
+	err := d.writeCommands(initSequence)
 	if err != nil {
 		return err
 	}
@@ -144,7 +140,7 @@ func (d *Device) Display() error {
 		}
 
 		offset := page * bytesPerPage
-		err = d.bus.WriteRAM(d.buffer[offset : offset+bytesPerPage])
+		err = d.writeRAM(d.buffer[offset : offset+bytesPerPage])
 		if err != nil {
 			return err
 		}
@@ -175,12 +171,22 @@ func (d *Device) setRAMPosition(page uint8, column uint8) error {
 		setHighColumn,
 	}
 
-	return d.bus.WriteCommands(cmds)
+	return d.writeCommands(cmds)
 }
 
 // Size returns the current size of the display.
 func (d *Device) Size() (w, h int16) {
 	return d.width, d.height
+}
+
+func (d *Device) writeCommands(commands []byte) error {
+	onlyCommandsFollowing := byte(0x00)
+	return d.bus.Tx(uint16(d.Address), append([]byte{onlyCommandsFollowing}, commands...), nil)
+}
+
+func (d *Device) writeRAM(data []byte) error {
+	onlyRAMFollowing := byte(0x40)
+	return d.bus.Tx(uint16(d.Address), append([]byte{onlyRAMFollowing}, data...), nil)
 }
 
 func bzero(buf []byte) {
