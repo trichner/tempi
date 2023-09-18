@@ -69,6 +69,8 @@ func (d *Device) Reset() (err error) {
 	return d.bus.WriteRegister(d.addr, rControl1, []byte{0x58})
 }
 
+// SetPowerManagement configures how the device makes use of the backup battery, see
+// datasheet section 8.5
 func (d *Device) SetPowerManagement(b PowerManagement) error {
 	return d.setRegister(rControl3, byte(b)<<5, 0xE0)
 }
@@ -107,7 +109,7 @@ func (d *Device) ReadTime() (time.Time, error) {
 	}
 
 	seconds := bcd2bin(buf[0] & 0x7F)
-	minute := bcd2bin(buf[1] % 0x7F)
+	minute := bcd2bin(buf[1] & 0x7F)
 	hour := bcd2bin(buf[2] & 0x3F)
 	day := bcd2bin(buf[3] & 0x3F)
 	//skipping weekday buf[4]

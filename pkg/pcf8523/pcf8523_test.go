@@ -4,7 +4,7 @@ import (
 	"testing"
 )
 
-func TestDecToBcd_RountTrip(t *testing.T) {
+func TestDecToBcd_RoundTrip(t *testing.T) {
 
 	for i := 0; i < 60; i++ {
 		a := bcd2bin(bin2bcd(i))
