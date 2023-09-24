@@ -20,6 +20,9 @@ import (
 //go:embed expected_hello_world.png
 var expectedHelloWorld []byte
 
+// mockBus mocks a fake i2c device adafruit4650 display.
+// The memory layout assumes that clients set up the device in a particular way and always send complete
+// pages to the device buffer.
 type mockBus struct {
 	img           draw.Image
 	line          int
@@ -56,7 +59,7 @@ func (m *mockBus) Tx(addr uint16, w, r []byte) error {
 func newMock() *mockBus {
 
 	m := image.NewRGBA(image.Rect(0, 0, width, height))
-	return &mockBus{img: m, addr: i2cAdressSh1107, currentPage: -1, currentColumn: -1}
+	return &mockBus{img: m, addr: DefaultAddress, currentPage: -1, currentColumn: -1}
 }
 
 func (m *mockBus) writeRAM(data []byte) error {
@@ -85,11 +88,6 @@ func (m *mockBus) writeRAM(data []byte) error {
 				c = color.White
 			}
 
-			if c == color.White {
-				fmt.Printf("setting %d/%d to white\n", x, y)
-			} else {
-				fmt.Printf("setting %d/%d to black\n", x, y)
-			}
 			m.img.Set(x+m.currentPage*8, height-y-1, c)
 		}
 	}
@@ -105,21 +103,6 @@ func (m *mockBus) toImage() *image.RGBA {
 	return container
 }
 
-// helpful for debugging :)
-func writeImage(img draw.Image) {
-
-	f, err := os.OpenFile(fmt.Sprintf("%d.png", time.Now().Unix()), os.O_RDWR|os.O_CREATE, 0644)
-	if err != nil {
-		panic(err)
-	}
-	defer f.Close()
-
-	err = png.Encode(f, img)
-	if err != nil {
-		panic(err)
-	}
-}
-
 func TestDevice_Display(t *testing.T) {
 
 	bus := newMock()
@@ -128,7 +111,7 @@ func TestDevice_Display(t *testing.T) {
 	dev.Configure()
 
 	drawPlus(&dev)
-	tinyfont.WriteLine(&dev, &freemono.Regular9pt7b, 0, 32, "Hello World!", color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff})
+	drawHellowWorld(&dev)
 
 	//when
 	dev.Display()
@@ -153,10 +136,15 @@ func drawPlus(d drivers.Displayer) {
 	}
 }
 
+func drawHellowWorld(d drivers.Displayer) {
+	tinyfont.WriteLine(d, &freemono.Regular9pt7b, 0, 32, "Hello World!", color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff})
+}
+
 func assertEqualImages(t testing.TB, actual, expected image.Image) {
 
 	if actual.Bounds().Dx() != expected.Bounds().Dx() || actual.Bounds().Dy() != expected.Bounds().Dy() {
-		t.Fatalf("differing size: was %v, expected %v", actual.Bounds(), expected.Bounds())
+		f := writeImage(actual)
+		t.Fatalf("differing size: was %v, expected %v, saved actual to %s", actual.Bounds(), expected.Bounds(), f)
 	}
 
 	bb := expected.Bounds()
@@ -164,8 +152,25 @@ func assertEqualImages(t testing.TB, actual, expected image.Image) {
 		for y := bb.Min.Y; y < bb.Max.Y; y++ {
 			actualBB := actual.Bounds()
 			if actual.At(x+actualBB.Min.X, y+actualBB.Min.Y) != expected.At(x, y) {
-				t.Fatalf("different pixel at %d/%d: %v != %v", x, y, actual.At(x, y), expected.At(x, y))
+				f := writeImage(actual)
+				t.Fatalf("different pixel at %d/%d: %v != %v, saved actual at %s", x, y, actual.At(x, y), expected.At(x, y), f)
 			}
 		}
 	}
+}
+
+func writeImage(img image.Image) string {
+
+	fn := fmt.Sprintf("%d.png", time.Now().Unix())
+	f, err := os.OpenFile(fn, os.O_RDWR|os.O_CREATE, 0644)
+	if err != nil {
+		panic(err)
+	}
+	defer f.Close()
+
+	err = png.Encode(f, img)
+	if err != nil {
+		panic(err)
+	}
+	return fn
 }

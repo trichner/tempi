@@ -13,7 +13,7 @@ import (
 	"tinygo.org/x/drivers"
 )
 
-const i2cAdressSh1107 = 0x3c
+const DefaultAddress = 0x3c
 
 const (
 	commandSetLowColumn  = 0x00
@@ -39,7 +39,7 @@ type Device struct {
 func New(bus drivers.I2C) Device {
 	return Device{
 		bus:     bus,
-		Address: i2cAdressSh1107,
+		Address: DefaultAddress,
 		width:   width,
 		height:  height,
 	}
