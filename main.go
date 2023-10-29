@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/trichner/tempi/pkg/adafruit4026"
 	"github.com/trichner/tempi/pkg/adafruit4650"
 	"github.com/trichner/tempi/pkg/hi"
 	"github.com/trichner/tempi/pkg/logger"
@@ -42,8 +43,11 @@ func main() {
 	log("setup temp")
 	sht := sht4x.New(bus, 0)
 
+	log("setup soilsensor")
+	soilsensor := adafruit4026.New(bus)
+
 	log("setup display")
-	disp := adafruit4650.New(bus, 0)
+	disp := adafruit4650.New(bus)
 
 	log("configuring")
 	err = disp.Configure()
@@ -106,6 +110,12 @@ func main() {
 			panic(err)
 		}
 
+		_, err = soilsensor.ReadMoisture()
+		if err != nil {
+			log("soil sensor failed to read: " + err.Error())
+		}
+		soilhum := soilsensor.AvgMoisture()
+
 		temp, hum, err := sht.ReadTemperatureHumidity()
 		if err != nil {
 			panic(err)
@@ -118,6 +128,7 @@ func main() {
 				Timestamp:                    now,
 				MilliDegreeCelsius:           temp,
 				MilliPercentRelativeHumidity: hum,
+				SoilHumidity:                 int32(soilhum),
 			})
 			if err != nil {
 				panic(err)
@@ -131,7 +142,7 @@ func main() {
 		}
 
 		if now.Sub(buttonPressed) <= time.Second*40 {
-			err = updateDisplay(&disp, now, temp, hum)
+			err = updateDisplay(&disp, now, temp, hum, soilhum)
 			if err != nil {
 				panic(err)
 			}
@@ -146,7 +157,7 @@ func main() {
 	}
 }
 
-func updateDisplay(disp *adafruit4650.Device, t time.Time, milliTemp, milliRh int32) error {
+func updateDisplay(disp *adafruit4650.Device, t time.Time, milliTemp, milliRh int32, soilHumidity uint16) error {
 
 	hours := (t.Hour() + 2) % 24 // UTC -> CEST
 	l := fmt.Sprintf("%02d:%02d:%02d", hours, t.Minute(), t.Second())
@@ -171,10 +182,13 @@ func updateDisplay(disp *adafruit4650.Device, t time.Time, milliTemp, milliRh in
 	rhum := float32(milliRh) / 1000.0
 	lineRhum := fmt.Sprintf("%2.1f%%RH  %s", rhum, emoji)
 
+	lineSoilHum := fmt.Sprintf("%d sh", soilHumidity)
+
 	disp.ClearBuffer()
-	tinyfont.WriteLine(disp, &freemono.Regular9pt7b, 0, 50, l, constWhite)
-	tinyfont.WriteLine(disp, &freemono.Regular9pt7b, 0, 10, lineTemp, constWhite)
-	tinyfont.WriteLine(disp, &freemono.Regular9pt7b, 0, 25, lineRhum, constWhite)
+	tinyfont.WriteLine(disp, &freemono.Regular9pt7b, 0, 15, lineTemp, constWhite)
+	tinyfont.WriteLine(disp, &freemono.Regular9pt7b, 0, 30, lineRhum, constWhite)
+	tinyfont.WriteLine(disp, &freemono.Regular9pt7b, 0, 45, lineSoilHum, constWhite)
+	tinyfont.WriteLine(disp, &freemono.Regular9pt7b, 0, 60, l, constWhite)
 	return disp.Display()
 }
 

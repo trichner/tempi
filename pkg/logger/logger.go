@@ -18,6 +18,7 @@ type Record struct {
 	Timestamp                    time.Time
 	MilliDegreeCelsius           int32
 	MilliPercentRelativeHumidity int32
+	SoilHumidity                 int32
 }
 
 type Logger struct {
@@ -73,7 +74,7 @@ func (l *Logger) IncrementBootCount() (int, error) {
 
 func (l *Logger) AppendRecord(r *Record) error {
 
-	line := fmt.Sprintf("{\"ts\":%d,\"temperature\":%d,\"humidity\":%d}\n", r.Timestamp.Unix(), r.MilliDegreeCelsius, r.MilliPercentRelativeHumidity)
+	line := fmt.Sprintf("{\"ts\":%d,\"temperature\":%d,\"humidity\":%d,\"soilhumidity\":%d}\n", r.Timestamp.Unix(), r.MilliDegreeCelsius, r.MilliPercentRelativeHumidity, r.SoilHumidity)
 
 	f, err := l.fs.OpenFile(logFileName, os.O_RDWR|os.O_APPEND|os.O_CREATE)
 	if err != nil {
