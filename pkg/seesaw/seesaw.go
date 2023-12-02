@@ -18,7 +18,6 @@ const (
 )
 
 type Seesaw interface {
-
 	// Read reads a number of bytes from the device after sending the read command and waiting 'delay'. The delays depend
 	// on the module and function and are documented in the seesaw datasheet
 	Read(module ModuleBaseAddress, function FunctionAddress, buf []byte, delay time.Duration) error
@@ -53,8 +52,7 @@ func (d *Device) SoftReset() error {
 }
 
 func (d *Device) waitForReset() error {
-
-	//give the device a little bit of time to reset
+	// give the device a little bit of time to reset
 	time.Sleep(time.Second)
 
 	var lastErr error
@@ -109,8 +107,8 @@ func (d *Device) Read(module ModuleBaseAddress, function FunctionAddress, buf []
 		return err
 	}
 
-	//This is needed for the client seesaw device to flush its RX buffer and process the command.
-	//See seesaw datasheet for timings for specific modules.
+	// This is needed for the client seesaw device to flush its RX buffer and process the command.
+	// See seesaw datasheet for timings for specific modules.
 	time.Sleep(delay)
 
 	return d.bus.Tx(d.Address, nil, buf)

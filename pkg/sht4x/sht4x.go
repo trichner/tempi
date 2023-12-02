@@ -68,10 +68,10 @@ func (d *Device) rawReadings() (uint16, uint16, error) {
 	}
 
 	tTicks := readUint(data[0], data[1])
-	//tChecksum := data[2]
+	// tChecksum := data[2]
 
 	rhTicks := readUint(data[3], data[4])
-	//rhChecksum := data[5]
+	// rhChecksum := data[5]
 
 	return tTicks, rhTicks, nil
 }

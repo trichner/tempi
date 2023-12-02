@@ -2,10 +2,11 @@ package neopixel
 
 import (
 	"errors"
-	"github.com/trichner/tempi/pkg/seesaw"
 	"image/color"
 	"strconv"
 	"time"
+
+	"github.com/trichner/tempi/pkg/seesaw"
 )
 
 // seesawWriteDelay the seesaw is quite timing sensitive and times out if not given enough time,
@@ -15,7 +16,6 @@ const seesawWriteDelay = time.Millisecond * 50
 const encodedColorLength = 3
 
 type Seesaw interface {
-
 	// Write writes an entire array into a given module and function
 	Write(module seesaw.ModuleBaseAddress, function seesaw.FunctionAddress, buf []byte) error
 }
@@ -28,7 +28,6 @@ type Device struct {
 }
 
 func New(dev Seesaw, pin uint8, ledCount int) (*Device, error) {
-
 	if !checkBufferLength(ledCount) {
 		return nil, errors.New("invalid pixel count: " + strconv.Itoa(ledCount))
 	}
@@ -59,7 +58,6 @@ func New(dev Seesaw, pin uint8, ledCount int) (*Device, error) {
 }
 
 func (s *Device) setupLedCount() error {
-
 	lenBytes := calculateBufferLength(s.ledCount)
 	buf := []byte{byte(lenBytes >> 8), byte(lenBytes & 0xFF)}
 	return s.seesaw.Write(seesaw.ModuleNeoPixelBase, seesaw.FunctionNeopixelBufLength, buf)
@@ -75,7 +73,6 @@ func (s *Device) setupPin() error {
 
 // WriteColorAtOffset updates the color for a single LED at the given offset
 func (s *Device) WriteColorAtOffset(offset uint16, color color.RGBA) error {
-
 	var buf [encodedColorLength]byte
 	putGRB(buf[:], color)
 	byteOffset := offset * encodedColorLength
@@ -84,7 +81,6 @@ func (s *Device) WriteColorAtOffset(offset uint16, color color.RGBA) error {
 
 // WriteColors writes the given colors to the seesaws NeoPixel buffer
 func (s *Device) WriteColors(buf []color.RGBA) error {
-
 	if len(buf) > s.ledCount {
 		return errors.New("buffer too big " + strconv.Itoa(len(buf)) + ">" + strconv.Itoa(s.ledCount*encodedColorLength))
 	}
@@ -122,7 +118,6 @@ func (s *Device) writeBuffer(byteOffset uint16, buf []byte) error {
 }
 
 func (s *Device) ShowPixels() error {
-
 	// at most every 300us
 	// https://github.com/adafruit/Adafruit_Seesaw/blob/8a2dc5e0645239cb34e23a4b62c456436b098ab3/seesaw_neopixel.cpp#L109
 	s.waitSinceLastOperation(time.Microsecond * 300)

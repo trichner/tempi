@@ -6,8 +6,7 @@ import (
 )
 
 func TestCalculate(t *testing.T) {
-
-	//for temp := 0; temp < 50; temp += 3 {
+	// for temp := 0; temp < 50; temp += 3 {
 	temp := 30
 	for rh := 0; rh <= 100; rh += 5 {
 
@@ -15,5 +14,4 @@ func TestCalculate(t *testing.T) {
 		fmt.Printf("t: %d, rh: %d%% = hi: %d\n", temp, rh, index)
 	}
 	//}
-
 }

@@ -4,11 +4,11 @@ import (
 	"encoding/hex"
 	"testing"
 	"time"
+
 	"tinygo.org/x/drivers/tester"
 )
 
 func TestDecToBcd_RoundTrip(t *testing.T) {
-
 	for i := 0; i < 60; i++ {
 		a := bcd2bin(bin2bcd(i))
 		if a != i {
@@ -71,10 +71,10 @@ func TestDevice_ReadTime(t *testing.T) {
 
 	dev := New(bus, DefaultAddress)
 
-	//when
+	// when
 	actualPointInTime, err := dev.ReadTime()
 
-	//then
+	// then
 	assertNoError(t, err)
 	assertEquals(t, actualPointInTime, expectedPointInTime)
 }
@@ -84,6 +84,7 @@ func assertNoError(t testing.TB, e error) {
 		t.Fatalf("unexpected error: %v", e)
 	}
 }
+
 func assertEquals[T comparable](t testing.TB, a, b T) {
 	if a != b {
 		t.Fatalf("%v != %v", a, b)

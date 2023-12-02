@@ -5,6 +5,7 @@ package pcf8523
 
 import (
 	"time"
+
 	"tinygo.org/x/drivers"
 )
 
@@ -112,7 +113,7 @@ func (d *Device) ReadTime() (time.Time, error) {
 	minute := bcd2bin(buf[1] & 0x7F)
 	hour := bcd2bin(buf[2] & 0x3F)
 	day := bcd2bin(buf[3] & 0x3F)
-	//skipping weekday buf[4]
+	// skipping weekday buf[4]
 	month := time.Month(bcd2bin(buf[5] & 0x1F))
 	year := int(bcd2bin(buf[6])) + 2000
 

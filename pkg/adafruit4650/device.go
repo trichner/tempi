@@ -47,14 +47,13 @@ func New(bus drivers.I2C) Device {
 
 // Configure initializes the display with default configuration
 func (d *Device) Configure() error {
-
 	bufferSize := d.width * d.height / 8
 	d.buffer = make([]byte, bufferSize)
 
 	// This sequence is an amalgamation of the datasheet, official Arduino driver, CircuitPython driver and other drivers
 	initSequence := []byte{
 		0xae, // display off, sleep mode
-		//0xd5, 0x41, // set display clock divider (from original datasheet)
+		// 0xd5, 0x41, // set display clock divider (from original datasheet)
 		0xd5, 0x51, // set display clock divider (from Adafruit driver)
 		0xd9, 0x22, // pre-charge/dis-charge period mode: 2 DCLKs/2 DCLKs (POR)
 		0x20,       // memory mode
@@ -112,7 +111,7 @@ func (d *Device) SetPixel(x int16, y int16, c color.RGBA) {
 	//           a1    b1
 	//
 
-	//flip y - so the display orientation matches the silk screen labeling etc.
+	// flip y - so the display orientation matches the silk screen labeling etc.
 	y = d.height - y - 1
 
 	page := x / 8
@@ -128,7 +127,6 @@ func (d *Device) SetPixel(x int16, y int16, c color.RGBA) {
 
 // Display sends the whole buffer to the screen
 func (d *Device) Display() error {
-
 	bytesPerPage := d.height
 
 	pages := (d.width + 7) / 8

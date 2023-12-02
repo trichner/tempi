@@ -1,13 +1,13 @@
 package keypad
 
 import (
-	"github.com/trichner/tempi/pkg/seesaw"
 	"time"
 	"unsafe"
+
+	"github.com/trichner/tempi/pkg/seesaw"
 )
 
 type Seesaw interface {
-
 	// Read reads a number of bytes from the device after sending the read command and waiting 'delay'. The delays depend
 	// on the module and function and are documented in the seesaw datasheet
 	Read(module seesaw.ModuleBaseAddress, function seesaw.FunctionAddress, buf []byte, delay time.Duration) error
@@ -46,7 +46,7 @@ func New(dev Seesaw) *SeesawKeypad {
 
 // KeyEventCount returns the number of pending KeyEvent s in the FIFO queue
 func (s *SeesawKeypad) KeyEventCount() (uint8, error) {
-	//https://github.com/adafruit/Adafruit_Seesaw/blob/master/Adafruit_seesaw.cpp#L721
+	// https://github.com/adafruit/Adafruit_Seesaw/blob/master/Adafruit_seesaw.cpp#L721
 	buf := make([]byte, 1)
 	err := s.seesaw.Read(seesaw.ModuleKeypadBase, seesaw.FunctionKeypadCount, buf, 500*time.Microsecond)
 	return buf[0], err
@@ -62,7 +62,7 @@ func (s *SeesawKeypad) SetKeypadInterrupt(enable bool) error {
 
 // Read reads pending KeyEvent s from the FIFO
 func (s *SeesawKeypad) Read(buf []KeyEvent) error {
-	//https://github.com/adafruit/Adafruit_Seesaw/blob/master/Adafruit_seesaw.cpp#LL732C21-L732C21
+	// https://github.com/adafruit/Adafruit_Seesaw/blob/master/Adafruit_seesaw.cpp#LL732C21-L732C21
 
 	// use some unsafe magic to avoid copy-ing the entire buffer
 	bytesBuf := *(*[]byte)(unsafe.Pointer(&buf))
@@ -72,14 +72,13 @@ func (s *SeesawKeypad) Read(buf []KeyEvent) error {
 
 // ConfigureKeypad enables or disables a key and edge on the keypad module
 func (s *SeesawKeypad) ConfigureKeypad(key uint8, edge Edge, enable bool) error {
-
-	//set STATE
+	// set STATE
 	state := byte(0)
 	if enable {
 		state |= 0x01
 	}
 
-	//set ACTIVE
+	// set ACTIVE
 	state |= (1 << edge) << 1
 	return s.seesaw.Write(seesaw.ModuleKeypadBase, seesaw.FunctionKeypadEvent, []byte{key, state})
 }

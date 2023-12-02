@@ -4,8 +4,10 @@
 package adafruit4026
 
 import (
-	"github.com/trichner/tempi/pkg/seesaw"
 	"time"
+
+	"github.com/trichner/tempi/pkg/seesaw"
+
 	"tinygo.org/x/drivers"
 )
 
@@ -14,8 +16,10 @@ const DefaultAddress = 0x36
 // from the Arduino driver https://github.com/adafruit/Adafruit_Seesaw/blob/c3e7b8f4dfdcc1f8ca3c0cabbacfd441ba8f8212/Adafruit_seesaw.cpp#L362
 const readDelay = time.Millisecond * 3
 
-const maxRetries = 5
-const retryDelay = time.Millisecond
+const (
+	maxRetries = 5
+	retryDelay = time.Millisecond
+)
 
 type Device struct {
 	dev *seesaw.Device
@@ -40,8 +44,8 @@ func (d *Device) SetAddress(addr uint16) {
 func (d *Device) ReadMoisture() (uint16, error) {
 	var buf [2]byte
 
-	//Arduino driver does retry here adding 1ms up to five times. Indeed, the sensor does not seem to be
-	//very reliable.
+	// Arduino driver does retry here adding 1ms up to five times. Indeed, the sensor does not seem to be
+	// very reliable.
 	var err error
 	for i := 0; i < maxRetries; i++ {
 		err = d.dev.Read(seesaw.ModuleTouchBase, seesaw.FunctionTouchChannelOffset, buf[:], readDelay)

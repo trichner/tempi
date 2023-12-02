@@ -1,14 +1,16 @@
 package hi
 
-const c1 = -8.784_694_755_56
-const c2 = 1.611_394_11
-const c3 = 2.338_548_838_89
-const c4 = -0.146_116_05
-const c5 = -0.012_308_094
-const c6 = -0.016_424_827_7778
-const c7 = 2.211_732e-3
-const c8 = 7.2546e-4
-const c9 = -3.582e-6
+const (
+	c1 = -8.784_694_755_56
+	c2 = 1.611_394_11
+	c3 = 2.338_548_838_89
+	c4 = -0.146_116_05
+	c5 = -0.012_308_094
+	c6 = -0.016_424_827_7778
+	c7 = 2.211_732e-3
+	c8 = 7.2546e-4
+	c9 = -3.582e-6
+)
 
 type HeatIndexEffect int
 
@@ -65,7 +67,7 @@ func Calculate(milliTemp, milliRH int32) int32 {
 	TxT := T * T
 	RxR := R * R
 
-	//https://en.wikipedia.org/wiki/Heat_index#Formula
+	// https://en.wikipedia.org/wiki/Heat_index#Formula
 	v := c1 + c2*T + c3*R + c4*T*R + c5*TxT + c6*RxR + c7*TxT*R + c8*T*RxR + c9*TxT*RxR
 
 	return int32(v + 0.5)

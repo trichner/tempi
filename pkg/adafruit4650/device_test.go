@@ -12,6 +12,7 @@ import (
 	"os"
 	"testing"
 	"time"
+
 	"tinygo.org/x/drivers"
 	"tinygo.org/x/tinyfont"
 	"tinygo.org/x/tinyfont/freemono"
@@ -57,13 +58,11 @@ func (m *mockBus) Tx(addr uint16, w, r []byte) error {
 }
 
 func newMock() *mockBus {
-
 	m := image.NewRGBA(image.Rect(0, 0, width, height))
 	return &mockBus{img: m, addr: DefaultAddress, currentPage: -1, currentColumn: -1}
 }
 
 func (m *mockBus) writeRAM(data []byte) error {
-
 	// RAM layout
 	//    *-----> y
 	//    |
@@ -96,7 +95,6 @@ func (m *mockBus) writeRAM(data []byte) error {
 }
 
 func (m *mockBus) toImage() *image.RGBA {
-
 	container := image.NewRGBA(m.img.Bounds().Inset(-1))
 	draw.Draw(container, container.Bounds(), image.NewUniform(color.RGBA{G: 255, A: 255}), image.Point{}, draw.Over)
 	draw.Draw(container, m.img.Bounds(), m.img, image.Point{}, draw.Over)
@@ -104,7 +102,6 @@ func (m *mockBus) toImage() *image.RGBA {
 }
 
 func TestDevice_Display(t *testing.T) {
-
 	bus := newMock()
 	dev := New(bus)
 
@@ -113,10 +110,10 @@ func TestDevice_Display(t *testing.T) {
 	drawPlus(&dev)
 	drawHellowWorld(&dev)
 
-	//when
+	// when
 	dev.Display()
 
-	//then
+	// then
 	actual := bus.toImage()
 
 	expected, err := png.Decode(bytes.NewReader(expectedHelloWorld))
@@ -141,7 +138,6 @@ func drawHellowWorld(d drivers.Displayer) {
 }
 
 func assertEqualImages(t testing.TB, actual, expected image.Image) {
-
 	if actual.Bounds().Dx() != expected.Bounds().Dx() || actual.Bounds().Dy() != expected.Bounds().Dy() {
 		f := writeImage(actual)
 		t.Fatalf("differing size: was %v, expected %v, saved actual to %s", actual.Bounds(), expected.Bounds(), f)
@@ -160,9 +156,8 @@ func assertEqualImages(t testing.TB, actual, expected image.Image) {
 }
 
 func writeImage(img image.Image) string {
-
 	fn := fmt.Sprintf("%d.png", time.Now().Unix())
-	f, err := os.OpenFile(fn, os.O_RDWR|os.O_CREATE, 0644)
+	f, err := os.OpenFile(fn, os.O_RDWR|os.O_CREATE, 0o644)
 	if err != nil {
 		panic(err)
 	}

@@ -7,12 +7,15 @@ import (
 	"os"
 	"strconv"
 	"time"
+
 	"tinygo.org/x/drivers/sdcard"
 	"tinygo.org/x/tinyfs/littlefs"
 )
 
-const bootCountFileName = "boot_count"
-const logFileName = "log_file.jsonlines"
+const (
+	bootCountFileName = "boot_count"
+	logFileName       = "log_file.jsonlines"
+)
 
 type Record struct {
 	Timestamp                    time.Time
@@ -27,7 +30,6 @@ type Logger struct {
 }
 
 func New() (*Logger, error) {
-
 	spi := machine.SPI0
 
 	// https://learn.adafruit.com/adafruit-adalogger-featherwing/pinouts
@@ -63,7 +65,6 @@ func New() (*Logger, error) {
 }
 
 func (l *Logger) IncrementBootCount() (int, error) {
-
 	count, err := readBootCount(l.fs)
 	if err != nil {
 		return 0, err
@@ -73,7 +74,6 @@ func (l *Logger) IncrementBootCount() (int, error) {
 }
 
 func (l *Logger) AppendRecord(r *Record) error {
-
 	line := fmt.Sprintf("{\"ts\":%d,\"temperature\":%d,\"humidity\":%d,\"soilhumidity\":%d}\n", r.Timestamp.Unix(), r.MilliDegreeCelsius, r.MilliPercentRelativeHumidity, r.SoilHumidity)
 
 	f, err := l.fs.OpenFile(logFileName, os.O_RDWR|os.O_APPEND|os.O_CREATE)
@@ -87,7 +87,6 @@ func (l *Logger) AppendRecord(r *Record) error {
 }
 
 func writeBootCount(fs *littlefs.LFS, count int) error {
-
 	f, err := fs.OpenFile(bootCountFileName, os.O_RDWR|os.O_CREATE)
 	if err != nil {
 		return err
@@ -97,8 +96,8 @@ func writeBootCount(fs *littlefs.LFS, count int) error {
 	_, err = io.WriteString(f, strconv.Itoa(count))
 	return err
 }
-func readBootCount(fs *littlefs.LFS) (int, error) {
 
+func readBootCount(fs *littlefs.LFS) (int, error) {
 	f, err := fs.OpenFile(bootCountFileName, os.O_RDONLY|os.O_CREATE)
 	if err != nil {
 		return 0, err

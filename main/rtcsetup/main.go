@@ -1,17 +1,19 @@
+//go:build rp2040
+
 package main
 
 import (
 	"fmt"
-	"github.com/trichner/tempi/pkg/pcf8523"
 	"machine"
 	"time"
+
+	"github.com/trichner/tempi/pkg/pcf8523"
 )
 
 var now = time.Date(2023, 9, 16, 20, 34, 0, 0, time.UTC)
 
 // main just set's a pcf8523 RTC to a hardcoded timestamp
 func main() {
-
 	machine.InitSerial()
 
 	time.Sleep(2 * time.Second)
@@ -61,7 +63,6 @@ func setPowerModeToSwitchOver(rtc *pcf8523.Device) error {
 }
 
 func setRtc(rtc *pcf8523.Device, t time.Time) error {
-
 	err := rtc.SetTime(t)
 	if err != nil {
 		panic(err)

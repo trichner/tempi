@@ -1,5 +1,5 @@
 
-TARGET=./feather-rp2040-homebrew.json
+TARGET?=./feather-rp2040-homebrew.json
 #TARGET=./feather-rp2040.json
 
 .PHONY: build
@@ -8,7 +8,11 @@ build:
 
 .PHONY: flash
 flash:
-	tinygo flash -print-stacks -size full -target $(TARGET) -monitor
+	tinygo flash -print-stacks -size full -target $(TARGET) -monitor ./main/tlogger
+
+.PHONY: fmt
+fmt:
+	gofumpt -l -w .
 
 .PHONY: flash.rtc
 flash.rtc:
@@ -17,3 +21,7 @@ flash.rtc:
 .PHONY: flash.soilsensor
 flash.soilsensor:
 	tinygo flash -print-stacks -size full -target $(TARGET) -monitor ./main/soilsensor
+
+.PHONY: flash.xmasds
+flash.xmasds:
+	tinygo flash -print-stacks -size full -target $(TARGET) -monitor ./main/xmasds

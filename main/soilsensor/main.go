@@ -1,14 +1,16 @@
+//go:build rp2040
+
 package main
 
 import (
 	"fmt"
-	"github.com/trichner/tempi/pkg/adafruit4026"
 	"machine"
 	"time"
+
+	"github.com/trichner/tempi/pkg/adafruit4026"
 )
 
 func main() {
-
 	machine.InitSerial()
 
 	bus := machine.I2C1
@@ -29,5 +31,4 @@ func main() {
 
 		time.Sleep(time.Second)
 	}
-
 }
