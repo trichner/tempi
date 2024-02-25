@@ -14,6 +14,10 @@ flash:
 fmt:
 	gofumpt -l -w .
 
+.PHONY: flash.alerty
+flash.alerty:
+	tinygo flash -size short -print-stacks -target=pico -stack-size=8kb -monitor ./main/alerty
+
 .PHONY: flash.littlefsck
 flash.littlefsck:
 	tinygo flash -print-stacks -size full -target $(TARGET) -monitor ./main/littlefsck
