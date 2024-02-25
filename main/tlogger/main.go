@@ -25,6 +25,8 @@ var constWhite = color.RGBA{255, 255, 255, 0}
 
 const watchDogMillis = 5000
 
+const withSoilSensor = false
+
 func main() {
 	machine.InitSerial()
 
@@ -54,8 +56,11 @@ func main() {
 	log("setup temp")
 	sht := sht4x.New(bus, 0)
 
-	log("setup soilsensor")
-	soilsensor := adafruit4026.New(bus)
+	var soilsensor adafruit4026.Device
+	if withSoilSensor {
+		log("setup soilsensor")
+		soilsensor = adafruit4026.New(bus)
+	}
 
 	log("setup display")
 	disp := adafruit4650.New(bus)
@@ -120,11 +125,14 @@ func main() {
 			panic(err)
 		}
 
-		_, err = soilsensor.ReadMoisture()
-		if err != nil {
-			log("soil sensor failed to read: " + err.Error())
+		var soilhum uint16
+		if withSoilSensor {
+			_, err = soilsensor.ReadMoisture()
+			if err != nil {
+				log("soil sensor failed to read: " + err.Error())
+			}
+			soilhum = soilsensor.AvgMoisture()
 		}
-		soilhum := soilsensor.AvgMoisture()
 
 		temp, hum, err := sht.ReadTemperatureHumidity()
 		if err != nil {

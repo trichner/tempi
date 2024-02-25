@@ -14,6 +14,10 @@ flash:
 fmt:
 	gofumpt -l -w .
 
+.PHONY: flash.littlefsck
+flash.littlefsck:
+	tinygo flash -print-stacks -size full -target $(TARGET) -monitor ./main/littlefsck
+
 .PHONY: flash.rtc
 flash.rtc:
 	tinygo flash -print-stacks -size full -target $(TARGET) -monitor ./main/rtcsetup
