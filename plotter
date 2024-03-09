@@ -1,0 +1,5 @@
+#!/usr/bin/gnuplot --persist
+
+set title "points"
+#plot "points.dat"
+plot for [i=2:*] 'points.dat' using 0:i with lines title 'Column '.i

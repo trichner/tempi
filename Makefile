@@ -16,7 +16,13 @@ fmt:
 
 .PHONY: flash.alerty
 flash.alerty:
-	tinygo flash -size short -print-stacks -target=pico -stack-size=8kb -monitor ./main/alerty
+	tinygo flash -size short -print-stacks -target=pico -monitor ./main/alerty
+	#tinygo flash -size short -print-stacks -target=pico -stack-size=8kb -monitor ./main/alerty
+
+.PHONY: openocd.alerty
+openocd.alerty:
+	openocd-rp2040 -f interface/cmsis-dap.cfg -f target/rp2040.cfg -c "adapter speed 5000"
+	#openocd-rp2040 -f interface/cmsis-dap.cfg -f target/rp2040.cfg -c "adapter speed 5000" -c 'program alerty.elf verify reset exit'
 
 .PHONY: flash.littlefsck
 flash.littlefsck:

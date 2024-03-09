@@ -30,3 +30,7 @@ func GammaCorrect(c color.RGBA) color.RGBA {
 		A: c.A,
 	}
 }
+
+func Gamma(i uint8) uint8 {
+	return lut[i]
+}
