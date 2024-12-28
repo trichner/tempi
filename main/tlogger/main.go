@@ -90,11 +90,15 @@ func main() {
 	log("setup SD card")
 	lg, err := logger.New()
 	if err != nil {
+		tinyfont.WriteLine(&disp, &freemono.Regular9pt7b, 0, 15, "ERROR: setup SD card failed", constWhite)
+		disp.Display()
 		panic(err)
 	}
 
 	n, err := lg.IncrementBootCount()
 	if err != nil {
+		tinyfont.WriteLine(&disp, &freemono.Regular9pt7b, 0, 15, "ERROR: writing boot counter", constWhite)
+		disp.Display()
 		panic(err)
 	}
 	log("bootcount: " + strconv.Itoa(n))
@@ -110,11 +114,17 @@ func main() {
 	}
 	buttonPressed := time.Time{}
 
+	log("waiting a bit")
+	time.Sleep(50 * time.Millisecond)
+
 	log("starting watchdog")
 	err = wd.Start()
 	if err != nil {
+		tinyfont.WriteLine(&disp, &freemono.Regular9pt7b, 0, 15, "ERROR: starting watchdog", constWhite)
+		disp.Display()
 		panic(err)
 	}
+	log("starting loop")
 
 	for {
 		wd.Update()
@@ -122,6 +132,8 @@ func main() {
 
 		now, err := rtc.ReadTime()
 		if err != nil {
+			tinyfont.WriteLine(&disp, &freemono.Regular9pt7b, 0, 15, "ERROR: reading RTC", constWhite)
+			disp.Display()
 			panic(err)
 		}
 
@@ -136,6 +148,8 @@ func main() {
 
 		temp, hum, err := sht.ReadTemperatureHumidity()
 		if err != nil {
+			tinyfont.WriteLine(&disp, &freemono.Regular9pt7b, 0, 15, "ERROR: reading temp/hum", constWhite)
+			disp.Display()
 			panic(err)
 		}
 
@@ -149,6 +163,8 @@ func main() {
 				SoilHumidity:                 int32(soilhum),
 			})
 			if err != nil {
+				tinyfont.WriteLine(&disp, &freemono.Regular9pt7b, 0, 15, "ERROR: writing record", constWhite)
+				disp.Display()
 				panic(err)
 			}
 		}

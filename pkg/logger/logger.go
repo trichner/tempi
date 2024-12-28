@@ -49,7 +49,7 @@ func New() (*Logger, error) {
 
 	err = fs.Mount()
 	if err != nil {
-		fmt.Printf("re-formatting: %s\n", err)
+		print("re-formatting SD card: " + err.Error())
 		if err = fs.Format(); err != nil {
 			return nil, err
 		}

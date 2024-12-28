@@ -14,6 +14,10 @@ flash:
 fmt:
 	gofumpt -l -w .
 
+.PHONY: flash.tlogger
+flash.tlogger:
+	tinygo flash -size short -print-stacks -target=feather-rp2040 -monitor ./main/tlogger
+
 .PHONY: flash.alerty
 flash.alerty:
 	tinygo flash -size short -print-stacks -target=pico -monitor ./main/alerty

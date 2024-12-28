@@ -1,6 +1,8 @@
 package be
 
-import "testing"
+import (
+	"testing"
+)
 
 func Equal[e comparable](t testing.TB, actual, expected e) {
 	if actual != expected {
