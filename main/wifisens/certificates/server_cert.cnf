@@ -1,0 +1,19 @@
+[req]
+distinguished_name = req_distinguished_name
+req_extensions = req_ext
+prompt = no
+
+[req_distinguished_name]
+C   = CH
+ST  = ZH
+L   = Zurich
+O   = n1b
+OU  = R&D
+CN  = localhost
+
+[req_ext]
+subjectAltName = @alt_names
+
+[alt_names]
+IP.1 = 192.168.16.94
+IP.2 = 127.0.0.1

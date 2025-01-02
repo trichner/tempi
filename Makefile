@@ -18,6 +18,14 @@ fmt:
 flash.tlogger:
 	tinygo flash -size short -print-stacks -target=feather-rp2040 -monitor ./main/tlogger
 
+.PHONY: flash.wifitest
+flash.wifitest:
+	tinygo flash -stack-size=4KB -size short -print-stacks -target=nano-rp2040 -monitor ./main/wifitest
+
+.PHONY: debug.wifisens
+flash.wifisens:
+	tinygo flash -stack-size=4KB -size short -print-stacks -target=nano-rp2040 -monitor ./main/wifisens
+
 .PHONY: flash.alerty
 flash.alerty:
 	tinygo flash -size short -print-stacks -target=pico -monitor ./main/alerty
