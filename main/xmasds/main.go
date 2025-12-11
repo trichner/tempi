@@ -3,6 +3,7 @@ package main
 import (
 	"image/color"
 	"machine"
+	"strconv"
 	"time"
 
 	"github.com/trichner/tempi/pkg/colors"
@@ -37,7 +38,11 @@ var colorPaletteWinterWarmer = []color.RGBA{
 	//{0xf2, 0xf0, 0xf0, 0xff},
 }
 
-var colorPalette = colorPaletteWinterWarmer
+var palettes = [][]color.RGBA{
+	colorPaletteXmas,
+	colorPaletteCherryBlossom,
+	colorPaletteWinterWarmer,
+}
 
 func main() {
 	machine.InitSerial()
@@ -53,14 +58,33 @@ func main() {
 
 	log("spi configured")
 
-	strip := apa102.New(spi)
-	leds := make([]Led, 30*5)
-	buf := make([]color.RGBA, 30*5)
+	log("initializing ADC")
+	machine.InitADC()
+	adc := machine.ADC{
+		Pin: machine.ADC0,
+	}
+	adc.Configure(machine.ADCConfig{})
 
-	r := rand.New(rand.NewSource(1337))
+	// empirical values
+	adcMin := 256
+	adcMax := 65280
+
+	v := int(adc.Get())
+	v = max(v-adcMin, 0)
+
+	f := float32(v) / float32(adcMax-adcMin)
+	paletteIndex := max(min(int(f*float32(len(palettes))), len(palettes)-1), 0)
+	log("palette index " + strconv.Itoa(paletteIndex) + " of " + strconv.Itoa(len(palettes)))
+	colorPalette := palettes[paletteIndex]
+
+	log("initializing apa102 driver")
+	strip := apa102.New(spi)
+	buf := make([]color.RGBA, 30*5)
 
 	log("initializing leds")
 
+	r := rand.New(rand.NewSource(1337))
+	leds := make([]Led, 30*5)
 	for i := range leds {
 		leds[i].Brightness = uint8(r.Uint64())
 		leds[i].Color = colorPalette[r.Intn(len(colorPalette))]
