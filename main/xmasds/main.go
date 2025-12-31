@@ -3,11 +3,11 @@ package main
 import (
 	"image/color"
 	"machine"
-	"strconv"
 	"time"
 
 	"github.com/trichner/tempi/pkg/colors"
 	"github.com/trichner/tempi/pkg/shims/rand"
+	"github.com/trichner/tempi/pkg/ustrconv"
 
 	"tinygo.org/x/drivers/apa102"
 )
@@ -38,10 +38,38 @@ var colorPaletteWinterWarmer = []color.RGBA{
 	//{0xf2, 0xf0, 0xf0, 0xff},
 }
 
+var colorPaletteCyberpunk = []color.RGBA{
+	{0xff, 0x00, 0x7f, 0xff}, // Hot pink
+	{0x00, 0xff, 0xff, 0xff}, // Cyan
+	{0x9d, 0x00, 0xff, 0xff}, // Electric purple
+	{0x00, 0xd4, 0xff, 0xff}, // Neon blue
+	{0xff, 0x00, 0xff, 0xff}, // Magenta
+}
+
+var colorPaletteSynthwave = []color.RGBA{
+	{0xff, 0x6a, 0xc1, 0xff}, // Pink
+	{0x79, 0x3a, 0x80, 0xff}, // Deep purple
+	{0x2d, 0x00, 0x4b, 0xff}, // Dark violet
+	{0xf9, 0xc8, 0x0e, 0xff}, // Sun yellow
+	{0xff, 0x35, 0x6b, 0xff}, // Sunset coral
+}
+
+var colorPaletteRubiks = []color.RGBA{
+	{0xff, 0x00, 0x00, 0xff}, // Red
+	{0x00, 0x9b, 0x48, 0xff}, // Green
+	{0x00, 0x46, 0xad, 0xff}, // Blue
+	{0xff, 0xd5, 0x00, 0xff}, // Yellow
+	{0xff, 0x58, 0x00, 0xff}, // Orange
+	{0xff, 0xff, 0xff, 0xff}, // White
+}
+
 var palettes = [][]color.RGBA{
 	colorPaletteXmas,
 	colorPaletteCherryBlossom,
 	colorPaletteWinterWarmer,
+	colorPaletteCyberpunk,
+	colorPaletteSynthwave,
+	colorPaletteRubiks,
 }
 
 func main() {
@@ -59,40 +87,24 @@ func main() {
 	log("spi configured")
 
 	log("initializing ADC")
-	machine.InitADC()
-	adc := machine.ADC{
-		Pin: machine.ADC0,
-	}
-	adc.Configure(machine.ADCConfig{})
-
-	// empirical values
-	adcMin := 256
-	adcMax := 65280
-
-	v := int(adc.Get())
-	v = max(v-adcMin, 0)
-
-	f := float32(v) / float32(adcMax-adcMin)
-	paletteIndex := max(min(int(f*float32(len(palettes))), len(palettes)-1), 0)
-	log("palette index " + strconv.Itoa(paletteIndex) + " of " + strconv.Itoa(len(palettes)))
-	colorPalette := palettes[paletteIndex]
+	adc := newADC(len(palettes))
 
 	log("initializing apa102 driver")
 	strip := apa102.New(spi)
 	buf := make([]color.RGBA, 30*5)
 
 	log("initializing leds")
-
 	r := rand.New(rand.NewSource(1337))
 	leds := make([]Led, 30*5)
-	for i := range leds {
-		leds[i].Brightness = uint8(r.Uint64())
-		leds[i].Color = colorPalette[r.Intn(len(colorPalette))]
-	}
 
 	log("starting animation")
 
 	for {
+		if s, changed := adc.GetSector(); changed {
+			log("palette changed to " + ustrconv.Uint16toString(uint16(s)))
+			setLeds(leds, r, palettes[s])
+		}
+
 		for i := range leds {
 			buf[i] = leds[i].Next()
 		}
@@ -103,6 +115,13 @@ func main() {
 		}
 
 		time.Sleep(10 * time.Millisecond)
+	}
+}
+
+func setLeds(leds []Led, r *rand.Rand, palette []color.RGBA) {
+	for i := range leds {
+		leds[i].Brightness = uint8(r.Uint64())
+		leds[i].Color = palette[r.Intn(len(palette))]
 	}
 }
 
